@@ -1,0 +1,13 @@
+---
+# Installation de  lamp ssl
+user_system: "flo"
+
+http_port: "80"
+nom_de_domaine: "www.cybermetrik.ovh"
+document_root: "cybermetrik"
+email: "cybermetrik@gmail.com"
+
+Php_version: "libapache2-mod-php7.3"
+Php_mysql_version: "php7.3-mysql"
+
+maria_version: "10.3"

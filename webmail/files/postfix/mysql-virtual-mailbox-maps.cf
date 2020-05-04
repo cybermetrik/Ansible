@@ -1,0 +1,5 @@
+user = {{user_mysql}}
+password = {{password_mysql}}
+hosts = 127.0.0.1
+dbname = {{database}}
+query = select maildir from virtual_users where email='%s'

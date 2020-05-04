@@ -1,0 +1,34 @@
+#myorigin = /etc/mailname
+smtp_banner = $myhostname ESTMP $email_name (DEBIAN/GNU)
+biff = no
+append_dot_mydomain = no
+readme_directory = no
+compatibility_level = 2
+
+smtpd_tls_cert_file=/etc/ssl/cert/{{certificat_ssl}}.pem
+smtpd_tls_key_file=/etc/ssl/private/{{certificat_ssl}}.key
+smtpd_use_tls=yes
+smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+smtp_tls_sessison_cache_database = btree:${data_directory}/smtp_scache
+
+smtpd_relay_restrictions = permit_mynetworks permit_sasl_authentificated defer_unauth_destination
+my_hostname = debian
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+#myorigin = /etc/mailname
+mydestination = $myhostname, debian, localhost.localdomain, localhost
+relayhost =
+mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
+mailbox_size_limit = 0
+recipient_delimiter = +
+init_interfaces = all
+init_procotols = all
+
+virtual_mailbox_domains = mysql:/etc/postfix/mysql-virtual-mailbox.cf
+virtual_mailbox_base = /var/mail/vhosts
+virtual_mailbox_maps = mysql:/etc/postfix/mysql-virtual-mailbox-maps.cf
+virtual_minimu_uid = 100
+virtual_uid_maps = static:5000
+virtual_gid_maps = static:5000
+
+smtp_generic_maps = hash:/etc/postfix/generic

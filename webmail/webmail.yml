@@ -1,0 +1,173 @@
+---
+# Installation postfix dovecot rainloop
+- hosts: all
+  become: true
+  vars_files:
+    - vars/variables.yml
+
+
+  tasks:
+
+    - name: "Installation de Postfix"
+      apt:
+        name: "postfix,postfix-mysql"
+        state: "present"
+
+    - name: "Démarrage de Postfix"
+      systemd:
+        name: "postfix"
+        state: "started"
+        enabled: "yes"
+
+    - name: "Installation de dovecot"
+      apt:
+        name: "dovecot-core,dovecot-imapd,dovecot-mysql,python-mysqldb,curl,php-dom,php-curl"
+        state: "present"
+
+    - name: "Démarrage de dovecot"
+      systemd:
+        name: "dovecot"
+        state: "started"
+        enabled: "yes"
+
+    - name: "Copy du fichier de configuration postfix"
+      template:
+        src: "files/postfix/main.cf"
+        dest: "/etc/postfix/main.cf"
+
+    - name: "Création du groupe vhosts"
+      group:
+        name: "vhosts"
+        state: "present"
+        gid: "5000"
+
+    - name: "Création de l'utilisateur vhosts"
+      user:
+        name: "vhosts"
+        home: "/var/mail/vhosts"
+        group: "vhosts"
+        shell: "/bin/false"
+        uid: "5000"
+        append: "yes"
+
+    - name: "Copy de mysql-virtual-mailbox-domains.cf sur le serveur"
+      template:
+        src: "files/postfix/mysql-virtual-mailbox-domains.cf"
+        dest: "/etc/postfix/mysql-virtual-mailbox-domains.cf"
+
+    - name: "Copy de mysql-virtual-mailbox-maps.cf sur le serveur"
+      template:
+        src: "files/postfix/mysql-virtual-mailbox-maps.cf"
+        dest: "/etc/postfix/mysql-virtual-mailbox-maps.cf"
+
+    - name: "Copy de vmailbox sur le serveur"
+      template:
+        src: "files/postfix/vmailbox"
+        dest: "/etc/postfix/vmailbox"
+
+    - name: "Activer vmailbox"
+      shell: "/usr/sbin/postmap /etc/postfix/vmailbox"
+      notify: "postfix restart"
+
+    - name: "Création de la database sur le serveur"
+      mysql_db:
+        name: "{{database}}"
+        state: "present"
+        login_user: "{{user_mysql}}"
+        login_password: "{{password_mysql}}"
+
+    - name: "Copy database.sql sur le serveur"
+      template:
+        src: "files/database.sql"
+        dest: "/root/database.sql"
+
+    - name: "Execute database.sql"
+      mysql_db:
+        login_user: "{{user_mysql}}"
+        login_password: "{{password_mysql}}"
+        state: "import"
+        name: "all"
+        target: "/root/database.sql"
+
+    - name: "Copy generic sur le serveur"
+      template:
+        src: "files/postfix/generic"
+        dest: "/etc/postfix/generic"
+
+    - name: "Activer generic sur le serveur"
+      shell: "/usr/sbin/postmap /etc/postfix/generic"
+      notify: "postfix restart"
+
+    - name: "Copy de 10-auth.conf"
+      template:
+        src: "files/dovecot/10-auth.conf"
+        dest: "/etc/dovecot/conf.d/10-auth.conf"
+      notify: "dovecot restart"
+
+    - name: "Copy de 10-mail.conf"
+      template:
+        src: "files/dovecot/10-mail.conf"
+        dest: "/etc/dovecot/conf.d/10-mail.conf"
+      notify: "dovecot restart"
+
+    - name: "Copy auth-sql.conf.ext"
+      template:
+        src: "files/dovecot/auth-sql.conf.ext"
+        dest: "/etc/dovecot/conf.d/auth-sql.conf.ext"
+      notify: "dovecot restart"
+
+    - name: "Copy dovecot-sql.conf.ext"
+      template:
+        src: "files/dovecot/dovecot-sql.conf.ext"
+        dest: "/etc/dovecot/dovecot-sql.conf.ext"
+      notify: "dovecot restart"
+
+    - name: "Créer le document root"
+      shell: "/usr/bin/mkdir -p /var/www/html/{{document_root}}/rainloop"
+
+    - name: "Téléchargement de rainloop"
+      get_url:
+        url: "https://repository.rainloop.net/installer.php"
+        dest: "/var/www/html/{{document_root}}/rainloop/"
+
+    - name: "Installation de rainloop"
+      shell: "/usr/bin/php /var/www/html/{{document_root}}/rainloop/installer.php"
+
+    - name: "Copy de .htaccess sur le serveur"
+      template:
+        src: "files/apache/.htaccess"
+        dest: "/var/www/html/{{document_root}}/rainloop/.htaccess"
+
+    - name: "Copy de webmail.virtualhost.conf sur le serveur"
+      template:
+        src: "file/apache/webmail.virtualhost.conf"
+        dest: "/etc/apache2/sites-available/webmail.virtualhost.conf"
+
+    - name: "Activation de webmail.virtualhost.conf sur le serveur"
+      shell: "/usr/sbin/a2ensite webmail.virtualhost.conf"
+      notify: "apache restart"
+
+    - name: "Copy de webmail.virtualhost_ssl.conf"
+      template:
+        src: "files/apache/webmail.virtualhost_ssl.conf"
+        dest: "/etc/apache2/sites-available/webmail.virtualhost_ssl.conf"
+
+    - name: "Activation de webmail.virtualhost_ssl.conf"
+      shell: "/usr/sbin/a2ensite webmail.virtualhost_ssl.conf"
+      notify: "apache restart"
+
+  handlers:
+    - name: "postfix restart"
+      systemd:
+        name: "postfix"
+        state: "restarted"
+
+    - name: "dovecot restart"
+      systemd:
+        name: "dovecot"
+        state: "restarted"
+
+    - name: "apache restart"
+      systemd:
+        name: "apache2"
+        state: "restarted"

@@ -1,0 +1,83 @@
+---
+# Installation de lamp + ssl
+- hosts: all
+  become: true
+  vars_files:
+    - vars/variables.yml
+
+  tasks:
+
+    - name: "Installation Apache2 + PHP"
+      apt:
+        name: "apache2,{{Php_version}},{{Php_mysql_version}}"
+        state: "present"
+
+    - name: "Démarrage du service apache2"
+      systemd:
+        name: "apache2"
+        state: "started"
+        enabled: "yes"
+
+    - name: "Création du document root"
+      file:
+        path: "/var/www/html/{{document_root}}"
+        state: directory
+        owner: "{{user_system}}"
+        mode: "0755"
+
+    - name: "Copy de index.html sur le serveur"
+      template:
+        src: "templates/index.html"
+        dest: "/var/www/html/{{document_root}}"
+
+    - name: "Copy de info.php sur le serveur"
+      template:
+        src: "templates/info.php"
+        dest: "/var/www/html/{{document_root}}"
+
+    - name: "Activer le module SSL"
+      shell: "/usr/sbin/a2enmod ssl"
+      notify: "reload apache2"
+
+    - name: "Activer le module rewrite"
+      shell: "/usr/sbin/a2enmod rewrite"
+      notify: "reload apache2"
+
+    - name: "Copy de virtualhost.conf sur le serveur"
+      template:
+        src: "files/virtualhost.conf"
+        dest: "/etc/apache2/sites-available/virtualhost.conf"
+      
+    - name: "Activer virtualhost.conf"
+      shell: /usr/sbin/a2ensite virtualhost.conf
+      notify: "reload apache2"
+
+    - name: "Copy de virtualhost_ssl.conf sur le serveur"
+      template:
+        src: "files/virtualhost_ssl.conf"
+        dest: "/etc/apache2/sites-available/virtualhost_ssl.conf"
+      
+    - name: "Activer virtualhost_ssl.conf"
+      shell: /usr/sbin/a2ensite virtualhost_ssl.conf
+      notify: "reload apache2"
+
+    - name: "Désactiver 000-default.conf"
+      shell: /usr/sbin/a2dissite 000-default.conf
+      notify: "reload apache2"
+
+    - name: "Installation de MariaDB"
+      apt:
+        name: "mariadb-server-{{maria_version}}"
+        state: "present"
+
+    - name: "Démarrage de MariaDB"
+      systemd:
+        name: "mariadb"
+        state: "started"
+        enabled: "yes"
+
+  handlers:
+    - name: "reload apache2"
+      systemd:
+        name: "apache2"
+        state: "reloaded"
