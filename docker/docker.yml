@@ -1,0 +1,25 @@
+# Installation de docker sur debian
+---
+- hosts: all
+  become: "true"
+
+  tasks:
+
+    - name: "Installation des pré-requis de docker"
+      apt:
+        name: "apt-transport-https,ca-certificates,curl,gnupg2,software-properties-common"
+        state: "present"
+
+    - name: "Téléchargement du depot docker"
+      apt_key:
+        url: "https://download.docker.com/linux/debian/gpg"
+        state: "present"
+
+    - apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
+        state: "present"
+
+    - name: "Installation de docker"
+      apt:
+        name: "docker-ce,docker-ce-cli,containerd.io"
+        state: "present"
