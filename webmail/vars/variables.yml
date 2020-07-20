@@ -1,6 +1,6 @@
 ---
-domaine: "cybermetrik.ovh"
-
+nom_de_domaine: "cybermetrik.ovh"
+http_port: "80"
 certificat_ssl: "cybermetrik"
 
 email: "admin@cybermetrik.ovh"
