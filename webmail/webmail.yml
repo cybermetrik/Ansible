@@ -140,7 +140,7 @@
 
     - name: "Copy de webmail.virtualhost.conf sur le serveur"
       template:
-        src: "file/apache/webmail.virtualhost.conf"
+        src: "files/apache/webmail.virtualhost.conf"
         dest: "/etc/apache2/sites-available/webmail.virtualhost.conf"
 
     - name: "Activation de webmail.virtualhost.conf sur le serveur"
